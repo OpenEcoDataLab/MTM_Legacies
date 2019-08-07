@@ -1,0 +1,179 @@
+---
+title: "Data Prep"
+author: "Matthew Ross"
+date: "8/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(raster)
+library(sf)
+```
+
+
+## Watershed terrain metrics prep
+
+Raw data comes from state of West Virginia (see Ross et al., 2016) or NED 
+(code makes it clear which one). 
+
+Just simplifying and cleaning the data so that it can be saved as a
+fast loading .RData file for making figures and analyses. 
+
+```{r}
+
+## DEM FROM NED 
+mud <- raster('data/rasters/mud_10m_dem')
+## Lidar derived DEM
+lidmud <- raster('data/rasters/DEM_5m.tif') %>% crop(.,extent(mud)) %>% projectRaster(.,mud)
+mud[!is.na(lidmud)] <- lidmud[!is.na(lidmud)]
+outlines <- st_read('data/shapefiles/watershedoutlines/AllWatersheds_WithVFs.shp')  %>%
+  st_transform(st_crs(mud))
+
+
+mud <- crop(mud,extent(outlines)) %>% crop(.,outlines) %>% mask(.,outlines)
+mud.slope <- terrain(mud,opt='slope')
+mud.aspect <- terrain(mud,opt='aspect')
+mud.shade <- hillShade(mud.slope,mud.aspect,angle=35,270)
+save(all,mud,mud.slope,mud.aspect,mud.shade,file='data/rdatas/MudRiverRast.RData')
+
+```
+
+
+## Canopy analysis prep
+
+This paper includes an analysis of canopy height (generated from the same Lidar
+data previously mentioned). Here we prepare the canopy height data for analysis.
+
+```{r}
+setwd("/media/mrr26/Extra Drive 1/Dropbox/Shared Science/NSF_MTM_All/MTM_GIS/Shapefiles")
+vfs <- readOGR('Valifils/','AllVF_W_YR')
+
+
+setwd("/media/mrr26/Extra Drive 1/Dropbox/My Research/MTM.VF.Age")
+
+
+# cume.max <- raster("/media/mrr26/Extra Drive 1/Dropbox/Shared Science/NSF_MTM_All/MTM_GIS/Pericak_Summer16/Data/outputProducts/totalCumulativeMineArea_1014.tif")
+# plot(cume.max)
+# cume.max <- reclassify(cume.max,c(0,1.5,1984))
+# cume.max <- reclassify(cume.max,c(-.1,1983,NA))
+# cume.max[!is.na(ras.max)] <- NA
+# ras.max[!is.na(cume.max)] <- 1984
+
+#writeRaster(ras.max,'lastmine1.tif',overwrite=T)
+
+ras.max <- raster('lastmine1.tif')
+#writeRaster(ras.prj,'lastwv.tif',overwrite=T)
+wv <- raster('lastwv.tif')
+
+# forest <- raster('~/Dropbox/Shared Science/NSF_MTM_All/MTM_GIS/wvLanduseLandcover_nrac_122012_utm83_grid/wv_lulc_2011') %>%
+#   projectRaster(.,ch)
+#
+# frst <- reclassify(forest,c(1.00001,26,NA))
+# ref <- ch
+# ref[is.na(frst)] <- NA
+#
+# writeRaster(ref,'refcanopy.tif')
+canp <- raster('refcanopy.tif')
+
+# stand.age <- raster('usgs_landcarbon/fsage_a1b_2010.tif')  %>% projectRaster(.,crs=projection(canp)) %>%
+#    crop(.,canp)
+
+
+
+
+# 
+# 
+#writeRaster(stand.age, file='studycanopyage.tif',overwrite=T)
+#stand.age <- raster('studycanopyage.tif') %>% projectRaster(.,canp,method='ngb')
+
+
+# canp.age <- canp %>% aggregate(.,fact=8,fun=median) %>%
+#   projectRaster(.,stand.age)
+# 
+# wv.250 <- wv %>% aggregate(.,fact=8,fun=median,na.rm=T) %>%
+#   project(raster.,stand.age)
+
+
+
+
+# ch <- raster('~/Dropbox/Shared Science/NSF_MTM_All/MTM_GIS/FusionWV/DSM_5m_norm.tif') %>%
+#   aggregate(.,fact=6,fun=median,na.rm=T)
+
+#writeRaster(ch,'canopy.tif',overwrite=T)
+m1 <- function(x,na.rm){
+  length(x[x<1])
+}
+
+m2 <- function(x,na.rm){
+  length(x[x<2])
+}
+
+# p1m.r <- raster('~/Dropbox/Shared Science/NSF_MTM_All/MTM_GIS/FusionWV/DSM_5m_norm.tif') %>%
+#    aggregate(.,fact=6,fun=m1)
+# 
+# ref1.p <- p1m.r
+# ref1.p[is.na(frst)] <- NA
+# forest <- raster('~/Dropbox/Shared Science/NSF_MTM_All/MTM_GIS/wvLanduseLandcover_nrac_122012_utm83_grid/wv_lulc_2011') %>%
+#   projectRaster(.,ch)
+# 
+# frst <- reclassify(forest,c(1.00001,26,NA))
+#ref.p <- p2m.r
+#ref.p[is.na(frst)] <- NA
+#writeRaster(p1m.r,file='canopyagg1m.tif')
+#writeRaster(ref.p,file='refgrassp.tif')
+#writeRaster(ref1.p,file='ref1grassp.tif')
+#writeRaster(p2m.r,'canopyagg2m.tif')
+p2m.r <- raster('canopyagg2m.tif')
+ref2.p <- raster('refgrassp.tif')
+ref1.p <- raster('ref1grassp.tif')
+p1m.r <- raster('canopyagg1m.tif')
+
+ch <- raster('canopy.tif')
+#ras.prj <- projectRaster(ras.max,ch)
+
+
+
+
+
+# et <-  raster('MOD16A3_ET_2010.tif') %>%
+# crop(.,projectExtent(ch,projection(.))) %>%
+# projectRaster(.,ch)
+
+#ndvi <- raster('greenest2010.tif',band=5) %>% crop(.,projectExtent(ch,projection(.))) %>% projectRaster(.,ch)
+# blue <-   raster('greenest2010.tif',band=1) %>% crop(.,projectExtent(ch,projection(.))) %>% projectRaster(.,ch)
+# green <-  raster('greenest2010.tif',band=2) %>% crop(.,projectExtent(ch,projection(.))) %>% projectRaster(.,ch)
+# red <-  raster('greenest2010.tif',band=3) %>% crop(.,projectExtent(ch,projection(.))) %>% projectRaster(.,ch)
+# ir <-  raster('greenest2010.tif',band=4) %>% crop(.,projectExtent(ch,projection(.))) %>% projectRaster(.,ch)
+
+#
+# vfs <- vfs %>% spTransform(.,projection(wv))
+# 
+# vf.ch <- crop(ch,vfs)  %>% mask(.,vfs)
+# vf.mn <- crop(wv,vfs) %>% mask(.,vfs)
+# vf.ndvi <- crop(ndvi,vfs) %>% mask(.,vfs)
+# vf.et <- crop(et, vfs) %>% mask(.,vfs)
+# vf.p2 <- crop(p2m.r,vfs) %>% mask(.,vfs)
+# 
+# novf.ch <- mask(ch,vfs,inverse=T)
+# novf.mn <- mask(wv,vfs,inverse=T)
+# novf.ndvi <- mask(ndvi,vfs,inverse=T)
+# novf.et <- mask(et, vfs,inverse=T)
+# novf.p2 <- mask(p2m.r,vfs,inverse=T)
+# #
+# vf.dat <- data.frame(canopy=as.vector(vf.ch),mined=round(as.vector(vf.mn),0),p2m=as.vector(vf.p2)) %>%
+#   mutate(time.since.mining=2012-mined) %>%
+#   filter(!is.na(mined)) %>%
+#   mutate(type='Valley fill')
+# #
+# novf.dat <- data.frame(canopy=as.vector(novf.ch),mined=round(as.vector(novf.mn),0),p2m=as.vector(novf.p2)) %>%
+#   mutate(time.since.mining=2012-mined) %>%
+#   mutate(type='Not valley fill')
+# #
+# comp.dat <- rbind(novf.dat,vf.dat)
+
+#save(comp.dat,file='vfcanopy.RData')
+
+
+```
+
