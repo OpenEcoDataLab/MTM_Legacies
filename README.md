@@ -1,2 +1,2 @@
 # MTM_Full
-Code and links to all data for Duke funded MTM Project NSF #
+Data analysis and data links for MTM legacy paper. 
